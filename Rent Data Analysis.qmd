@@ -1,0 +1,101 @@
+---
+title: "Rent Data Analysis"
+format: html
+editor: visual
+Authors: "Vamshika Pippadapally, Pavankumar Bodepudi, Vamsi Pacha, Deekshith Reddy, Niharika Ravela"
+---
+
+## Rent Data Analysis for Future Price Prediction
+
+```{r}
+# import libraries
+library(corrplot)
+library(ggplot2)
+library(dplyr)
+library(broom)
+library(ggpubr)
+```
+
+```{r}
+# see the working directory
+getwd()
+# extract appropriate columns from the dataset and map into dataframe
+RENTDATA <- read.csv("data_transactions.csv",strings = T)
+df <- subset(RENTDATA, select=c("projectLat", "projectLon", "completionyear", "projectSize", "floor", "postalcode", "buildingHeight", "contractyear", "contractmonth", "contractday", "pricetransaction_nominal", "pricepsm_nominal", "areasqm", "distNearMall"))
+
+```
+
+```{r}
+str(df)
+```
+
+```{r}
+df.cor = cor(df, method = "pearson", use = "complete.obs")
+#df.cor
+
+round(df.cor,2)
+```
+
+```{r}
+corrplot(df.cor)
+```
+
+```{r}
+# calculating the correlation between the two variables
+cor(df$areasqm, df$pricetransaction_nominal)
+```
+
+```{r}
+# check whether the dependent variable follows a normal distribution
+hist(df$pricetransaction_nominal)
+```
+
+```{r}
+# test linearity
+plot(areasqm ~ pricetransaction_nominal, data = df)
+```
+
+```{r}
+# Perform the linear regression analysis
+pricetransaction_nominal.lm <- lm(pricetransaction_nominal ~ areasqm, data = df)
+
+summary(pricetransaction_nominal.lm)
+```
+
+```{r}
+# Check for homoscedasticity
+par(mfrow=c(2,2))
+plot(pricetransaction_nominal.lm)
+par(mfrow=c(1,1))
+```
+
+```{r}
+# Visualize the results with a graph
+#Plot the data points on a graph
+df.graph <- ggplot(df, aes(x=areasqm, y=pricetransaction_nominal))+
+  geom_point() + scale_y_continuous(labels = function(x) format(x, scientific = FALSE))
+
+# Add the linear regression line to the plotted data
+df.graph <- df.graph + geom_smooth(method="lm", col="red")
+
+# Regression line equation
+df.graph <- df.graph + stat_regline_equation()
+
+# Final graph
+df.graph + theme_bw() +
+  labs(title = "Reported Transaction price (S$, nominal) as a function of Apartment size (m2)",
+       x = "Apartment size (m2)",
+       y = "Transaction price (S$, nominal)")
+```
+
+```{r}
+model <- lm(pricetransaction_nominal ~ ., data = df)
+
+summary(model)
+```
+
+```{r}
+par(mfrow=c(2,2))
+plot(model)
+par(mfrow=c(1,1))
+```
